@@ -1,21 +1,22 @@
 -- MUST be set before loading plugins
 vim.g.mapleader = " "
+vim.g.maplocalleader = "\\"
 
--- Find all .lua files under lua/config/
-for _, file in ipairs(vim.fn.globpath(vim.fn.stdpath("config") .. "/lua/config", "**/*.lua", false, true)) do
-  -- Extract module path relative to 'lua/'
-  local mod = file:match(".*/lua/(.*)%.lua$"):gsub("/", ".")
-  if not mod:match("%.lazy$") and not mod:match("%.init$") then
-    pcall(require, mod)
+-- Normalize paths across Linux/WSL and Windows
+local config_path = vim.fs.normalize(vim.fn.stdpath("config") .. "/lua/config")
+
+for _, file in ipairs(vim.fn.globpath(config_path, "**/*.lua", false, true)) do
+  -- Normalize backslashes to forward slashes for Windows compatibility
+  local normalized = vim.fs.normalize(file)
+  local mod = normalized:match(".*/lua/(.*)%.lua$")
+
+  if mod then
+    mod = mod:gsub("/", ".")
+    if not mod:match("%.lazy$") and not mod:match("%.init$") then
+      pcall(require, mod)
+    end
   end
 end
 
--- Then load lazy last
+-- Load your lazy config
 require("config.lazy")
-
--- Lazy setup
-require("lazy").setup({
-  spec = {
-    { import = "plugins" },
-  },
-})
